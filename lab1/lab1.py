@@ -47,5 +47,5 @@ class RoadGraph:
         plt.show()
 
 
-road = RoadGraph(size=25, remove_edges=10)
-road.draw()
+# road = RoadGraph(size=25, remove_edges=10)
+# road.draw()

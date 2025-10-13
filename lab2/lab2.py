@@ -10,7 +10,7 @@ class CarAgent:
         self.start = start
         self.finish = finish
         self.current_node = start
-        self.visited = set([start])
+        self.visited = {start}
         self.history = [start]
 
         self.positions = nx.get_node_attributes(graph, 'pos')
@@ -23,7 +23,7 @@ class CarAgent:
         x2, y2 = self.positions[node2]
         return abs(x1 - x2) + abs(y1 - y2)
 
-    def decide_way(self):
+    def decide_next(self):
         neighbors = self.perceive()
         if not neighbors:
             return None
@@ -34,10 +34,10 @@ class CarAgent:
             best_neighbor = min(unvisited, key=lambda n: self.manhattan_distance(n, self.finish))
         else:
             best_neighbor = min(neighbors, key=lambda n: self.manhattan_distance(n, self.finish))
-
         return best_neighbor
 
-    def move(self, next_node):
+    def move(self):
+        next_node = self.decide_next()
         if next_node is not None:
             self.current_node = next_node
             self.visited.add(next_node)
@@ -58,16 +58,18 @@ class CarAgent:
                 colors.append("white")
         return colors
 
+def draw_graph(agent, ax):
+    nx.draw(agent.graph, agent.positions, node_color=agent.get_colors(), with_labels=False, node_size=500,edgecolors="black", linewidths=2, ax=ax)
+    path_edges = list(zip(agent.history[:-1], agent.history[1:]))
+    nx.draw_networkx_edges(agent.graph, agent.positions, edgelist=path_edges, edge_color="red", width=3, ax=ax)
 
 road = RoadGraph(size=25, remove_edges=10)
 start, goal = 0, 24
 agent = CarAgent(road.graph, start, goal)
 
-pos = nx.get_node_attributes(agent.graph, 'pos')
 fig, ax = plt.subplots(figsize=(6, 6))
 
-nx.draw(agent.graph, pos, node_color=agent.get_colors(),with_labels=True, node_size=500, edgecolors="black", ax=ax)
-
+nx.draw(agent.graph, agent.positions, node_color=agent.get_colors(), with_labels=False, node_size=500,edgecolors="black", linewidths=2, ax=ax)
 
 def update(frame):
     ax.clear()
@@ -76,15 +78,9 @@ def update(frame):
         ani.event_source.stop()
 
     if frame > 0 and agent.current_node != agent.finish:
-        next_node = agent.decide_way()
-        agent.move(next_node)
+        agent.move()
 
-    nx.draw(agent.graph, pos, node_color=agent.get_colors(),with_labels=True, node_size=500, edgecolors="black", ax=ax)
-
-    path_edges = list(zip(agent.history[:-1], agent.history[1:]))
-    nx.draw_networkx_edges(agent.graph, pos, edgelist=path_edges, edge_color="red", width=3, ax=ax)
-
-    ax.set_title(f"Крок {frame}: агент у вершині {agent.current_node}")
+    draw_graph(agent, ax)
 
 
 ani = FuncAnimation(fig, update, frames=range(0, 100), interval=1000, repeat=False)
